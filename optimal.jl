@@ -13,7 +13,7 @@ initial_ages = ones(length(properties),1)
 slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
 plateau_years = 4*ones(length(properties),1)
 minimum_yield_per_year = 5
-maximum_yield_per_year = 80
+maximum_yield_per_year = 100
 years = 1:5
 M = 100000000
 
