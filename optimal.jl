@@ -1,6 +1,10 @@
 using JuMP
 <<<<<<< HEAD
+<<<<<<< HEAD
 using Cbc
+=======
+#using Cbc
+>>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 =======
 #using Cbc
 >>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
@@ -12,8 +16,11 @@ include("read_data.jl")
 
 # Dummy data for model development
 <<<<<<< HEAD
+<<<<<<< HEAD
 properties = 1:length(initialAge)
 =======
+=======
+>>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 minimum_yield_per_year = 5
 maximum_yield_per_year = 1000
 n_properties = 5
@@ -29,7 +36,10 @@ initial_ages = initialAge
 #slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
 #plateau_years = 4*ones(length(properties),1)
 <<<<<<< HEAD
+<<<<<<< HEAD
 #replanting_cost = 1
+=======
+>>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 =======
 >>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 property_age = 1:length(density[1,:])
@@ -96,12 +106,15 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 # Maximise profit: balance yield against replanting cost
 <<<<<<< HEAD
+<<<<<<< HEAD
 @objective(m, Max, sum(lambda[p,t,pa] * yields[p,pa]
                        #- harvest[p,t] * replanting_cost
                        for p in properties,
                            t in years_to_plan,
                            pa in property_age))
 =======
+=======
+>>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 @objective(m, Max,
            sum(lambda[p,t,pa] * yields[p,pa]
                for p in properties,
@@ -110,6 +123,9 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
            - sum(harvest[p,t] * replanting_cost
                  for p in properties,
                  t in years_to_plan))
+<<<<<<< HEAD
+>>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
+=======
 >>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 
 # Integer variables >= 0
