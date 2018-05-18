@@ -22,18 +22,17 @@ initial_ages = initialAge
 #slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
 #plateau_years = 4*ones(length(properties),1)
 #replanting_cost = 1
-property_age = 1:length(yields[1,:])
-years_to_plan = 1:n_years
+property_age = 1:length(density[1,:])
 M = 100000000
 
-# years_to_plan = 1:5
-# minimum_yield_per_year = 5
-# maximum_yield_per_year = 100
+years_to_plan = 1:1
+minimum_yield_per_year = 5
+maximum_yield_per_year = 100
 
 #yields = zeros(length(properties),length(property_age))
 #for p in properties
 #    for pa in property_age
-#        current_age = initial_ages[p] + p
+#        current_age = initial_ages[p] + pa - 1
 #        if current_age < plateau_years[pa]
 #            yields[p,pa] = slopes[p] * current_age
 #        else
@@ -42,7 +41,6 @@ M = 100000000
 #    end
 #end
 
-# yields = density
 
 
 function print_harvests(harvests)
