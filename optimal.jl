@@ -1,35 +1,37 @@
 using JuMP
 using Cbc
 
-#include("readerFunction.jl")
-#include("writeSolutionToFile.jl")
-#include("validateSolution.jl")
+include("read_data.jl")
 
 #filename = ARGS[1]
 
 # Dummy data for model development
-properties = 1:20
-initial_ages = ones(length(properties),1)
-slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
-plateau_years = 4*ones(length(properties),1)
-minimum_yield_per_year = 5
-maximum_yield_per_year = 100
-replanting_cost = 1
-property_age = 1:5
-years_to_plan = 1:5
+properties = 1:length(initialAge)
+#initial_ages = ones(length(properties),1)
+initial_ages = initialAge
+#slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
+#plateau_years = 4*ones(length(properties),1)
+#replanting_cost = 1
+property_age = 1:length(density[1,:])
 M = 100000000
 
-yields = zeros(length(properties),length(property_age))
-for p in properties
-    for pa in property_age
-        current_age = initial_ages[p] + pa - 1
-        if current_age < plateau_years[pa]
-            yields[p,pa] = slopes[p] * current_age
-        else
-            yields[p,pa] = slopes[p] * plateau_years[p]
-        end
-    end
-end
+years_to_plan = 1:1
+minimum_yield_per_year = 5
+maximum_yield_per_year = 100
+
+#yields = zeros(length(properties),length(property_age))
+#for p in properties
+#    for pa in property_age
+#        current_age = initial_ages[p] + pa - 1
+#        if current_age < plateau_years[pa]
+#            yields[p,pa] = slopes[p] * current_age
+#        else
+#            yields[p,pa] = slopes[p] * plateau_years[p]
+#        end
+#    end
+#end
+
+yields = density
 
 
 function print_harvests(harvests)
@@ -72,7 +74,7 @@ m = Model(solver=CbcSolver(log=3, Sec=30))
 
 # Maximise profit: balance yield against replanting cost
 @objective(m, Max, sum(lambda[p,t,pa] * yields[p,pa]
-                       - harvest[p,t] * replanting_cost
+                       #- harvest[p,t] * replanting_cost
                        for p in properties,
                            t in years_to_plan,
                            pa in property_age))
@@ -122,13 +124,13 @@ m = Model(solver=CbcSolver(log=3, Sec=30))
 # be the previous age +1.
 @constraint(m, [p in properties, t in years_to_plan],
             age[p, t] >= 1)
-@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years; prev_t+1 == next_t],
+@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years_to_plan; prev_t+1 == next_t],
             age[p, next_t] <= age[p, prev_t] + 1)
 
-@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years; prev_t+1 == next_t],
+@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years_to_plan; prev_t+1 == next_t],
             age[p, next_t] <= 1 + M * (1 - harvest[p,prev_t]))
 
-@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years; prev_t+1 == next_t],
+@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years_to_plan; prev_t+1 == next_t],
             age[p, next_t] >= age[p, prev_t] + 1 - M * harvest[p,prev_t])
 
 
@@ -156,7 +158,7 @@ println("yields[p,t]:")
 print_yields(yields)
 println("lambda:")
 for pa in property_age
-    for t in years
+    for t in years_to_plan
         print("$(getvalue(lambda[length(properties),t,pa])) ")
     end
     println()
@@ -164,7 +166,7 @@ end
 
 println("y:")
 for pa in property_age[1:end-1]
-    for t in years
+    for t in years_to_plan
         print("$(Int(round(getvalue(y[length(properties),t,pa])))) ")
     end
     println()
