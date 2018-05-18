@@ -1,5 +1,6 @@
 using JuMP
 using Cbc
+using Gurobi
 
 include("read_data.jl")
 
@@ -15,7 +16,7 @@ initial_ages = initialAge
 property_age = 1:length(density[1,:])
 M = 100000000
 
-years_to_plan = 1:1
+years_to_plan = 1:5
 minimum_yield_per_year = 5
 maximum_yield_per_year = 100
 
@@ -119,7 +120,7 @@ m = Model(solver=CbcSolver(log=3, Sec=30))
 
 # assign initial ages
 @constraint(m, [p in properties],
-            age[p,1] == initial_ages[1])
+            age[p,1] == initial_ages[p] + 1)
 # 'age' must be 1 for the year after a harvest. For any other year, 'age' must
 # be the previous age +1.
 @constraint(m, [p in properties, t in years_to_plan],
