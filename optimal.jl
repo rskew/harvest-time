@@ -21,8 +21,8 @@ properties = 1:n_properties
 initial_ages = initialAge
 #slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
 #plateau_years = 4*ones(length(properties),1)
-#replanting_cost = 1
 property_age = 1:length(density[1,:])
+years_to_plan = 1:n_years
 M = 100000000
 
 years_to_plan = 1:1
@@ -64,7 +64,6 @@ end
 
 #m = Model(solver=CbcSolver(log=1, Sec=300))
 m = Model(solver=GurobiSolver(TimeLimit=time_limit))
-#TimeLimit=time_limit
 # 'harvest' is 1 for a propertt for a given year if that property is
 # harvested that year
 @variable(m, harvest[properties,years_to_plan], Bin)
