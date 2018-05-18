@@ -8,35 +8,18 @@ include("read_data.jl")
 
 # Dummy data for model development
 minimum_yield_per_year = 5
-maximum_yield_per_year = 1000
+maximum_yield_per_year = 100
 n_properties = 5
-n_years = 12
+n_years = 20
 replanting_cost = 10
 time_limit = 60 # seconds
 
 
 properties = 1:n_properties
-#initial_ages = ones(length(properties),1)
 initial_ages = initialAge[1:n_properties] + 1
-#slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
-#plateau_years = 4*ones(length(properties),1)
 property_age = 1:length(density[1,:])
 years_to_plan = 1:n_years
 M = 100000000
-
-#yields = zeros(length(properties),length(property_age))
-#for p in properties
-#    for pa in property_age
-#        current_age = initial_ages[p] + pa - 1
-#        if current_age < plateau_years[pa]
-#            yields[p,pa] = slopes[p] * current_age
-#        else
-#            yields[p,pa] = slopes[p] * plateau_years[p]
-#        end
-#    end
-#end
-
-yields = density[1:n_properties,:]
 
 
 function print_harvests(harvests)
@@ -58,7 +41,7 @@ end
 
 ### Modelling
 
-#m = Model(solver=CbcSolver(log=1, Sec=300))
+#m = Model(solver=CbcSolver(log=1, Sec=time_limit))
 m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 # 'harvest' is 1 for a propertt for a given year if that property is
@@ -80,34 +63,16 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 # Maximise profit: balance yield against replanting cost
 @objective(m, Max,
-           sum(lambda[p,t,pa] * yields[p,pa]
+           sum(harvest_age[p,t] * growthRate[p]
+               - harvest[p,t] * replanting_cost
                for p in properties,
-               t in years_to_plan,
-               pa in property_age)
-           - sum(harvest[p,t] * replanting_cost
-                 for p in properties,
-                 t in years_to_plan))
+               t in years_to_plan))
 
 # Integer variables >= 0
 @constraint(m, [p in properties, t in years_to_plan],
             age[p,t] >= 0)
 @constraint(m, [p in properties, t in years_to_plan],
             harvest_age[p,t] >= 0)
-
-# Linearise by parts constraints
-@constraint(m, [p in properties, t in years_to_plan],
-            harvest_age[p,t] == sum(lambda[p,t,pa] * pa
-                                    for pa in property_age))
-@constraint(m, [p in properties, t in years_to_plan],
-            sum(lambda[p,t,pa] for pa in property_age) == harvest[p,t])
-@constraint(m, [p in properties, t in years_to_plan],
-            sum(y[p,t,pa] for pa in property_age[1:end-1]) == 1)
-@constraint(m, [p in properties, t in years_to_plan],
-            lambda[p,t,1] <= y[p,t,1])
-@constraint(m, [p in properties, t in years_to_plan, pa in property_age[1:end-2]],
-            lambda[p,t,pa+1] <= y[p,t,pa] + y[p,t,pa+1])
-@constraint(m, [p in properties, t in years_to_plan],
-            lambda[p,t,length(property_age)] <= y[p,t,length(property_age)-1])
 
 # harvest_age is zero for years_to_plan where there is no harvest
 @constraint(m, [p in properties, t in years_to_plan],
@@ -140,16 +105,14 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 # Must provide a minimum quantity per year.
 @constraint(m, [t in years_to_plan],
-            sum(lambda[p,t,pa] * yields[p,pa]
-                for p in properties,
-                pa in property_age)
+            sum(harvest_age[p,t] * growthRate[p]
+                for p in properties)
             >= minimum_yield_per_year)
 
 # The amount of product that can be processed is limited.
 @constraint(m, [t in years_to_plan],
-            sum(lambda[p,t,pa] * yields[p,pa]
-                for p in properties,
-                pa in property_age)
+            sum(harvest_age[p,t] * growthRate[p]
+                for p in properties)
             <= maximum_yield_per_year)
 
 solve(m)
@@ -160,24 +123,7 @@ println("age[p,t]:")
 print_harvests(age)
 println("harvest_ages[p,t]:")
 print_harvests(harvest_age)
-println("yields[p,pa]:")
-print_yields(yields)
-println("lambda:")
-for pa in property_age
-    for t in years_to_plan
-        print("$(getvalue(lambda[length(properties),t,pa])) ")
-    end
-    println()
-end
-
-println("y:")
-for pa in property_age[1:end-1]
-    for t in years_to_plan
-        print("$(Int(round(getvalue(y[length(properties),t,pa])))) ")
-    end
-    println()
-end
-
-
+println("growth rates:")
+println("$(growthRate[1:n_properties])")
 println("Total cost $(getobjectivevalue(m))")
 println("Bound is $(getobjectivebound(m))")

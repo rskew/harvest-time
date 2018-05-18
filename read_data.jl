@@ -37,7 +37,7 @@ function readData(filename)
         end
     end
 
-    growthRate =  Dict{Int, Float64}()
+    growthRate =  zeros(length(properties),1)
     for i in properties
         growthRate[i] = (density[i,lastDensityColumn-firstDensityColumn]-density[i,1])/
                                         (lastDensityColumn-firstDensityColumn)
