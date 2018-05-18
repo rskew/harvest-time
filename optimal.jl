@@ -6,18 +6,18 @@ include("read_data.jl")
 #filename = ARGS[1]
 
 # Dummy data for model development
-properties = 1:length(initialAge)
+years_to_plan = 1:4
+minimum_yield_per_year = 20
+maximum_yield_per_year = 500
+n_properties = 3
+properties = 1:n_properties
 #initial_ages = ones(length(properties),1)
-initial_ages = initialAge
+initial_ages = initialAge[1:n_properties] + 1
 #slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
 #plateau_years = 4*ones(length(properties),1)
-#replanting_cost = 1
+replanting_cost = 10
 property_age = 1:length(density[1,:])
 M = 100000000
-
-years_to_plan = 1:1
-minimum_yield_per_year = 5
-maximum_yield_per_year = 100
 
 #yields = zeros(length(properties),length(property_age))
 #for p in properties
@@ -31,7 +31,7 @@ maximum_yield_per_year = 100
 #    end
 #end
 
-yields = density
+yields = density[1:n_properties,:]
 
 
 function print_harvests(harvests)
@@ -74,7 +74,7 @@ m = Model(solver=CbcSolver(log=3, Sec=30))
 
 # Maximise profit: balance yield against replanting cost
 @objective(m, Max, sum(lambda[p,t,pa] * yields[p,pa]
-                       #- harvest[p,t] * replanting_cost
+                       - harvest[p,t] * replanting_cost
                        for p in properties,
                            t in years_to_plan,
                            pa in property_age))
@@ -119,7 +119,7 @@ m = Model(solver=CbcSolver(log=3, Sec=30))
 
 # assign initial ages
 @constraint(m, [p in properties],
-            age[p,1] == initial_ages[1])
+            age[p,1] == initial_ages[p])
 # 'age' must be 1 for the year after a harvest. For any other year, 'age' must
 # be the previous age +1.
 @constraint(m, [p in properties, t in years_to_plan],
@@ -154,7 +154,7 @@ println("age[p,t]:")
 print_harvests(age)
 println("harvest_ages[p,t]:")
 print_harvests(harvest_age)
-println("yields[p,t]:")
+println("yields[p,pa]:")
 print_yields(yields)
 println("lambda:")
 for pa in property_age
