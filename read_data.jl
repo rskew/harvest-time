@@ -47,4 +47,4 @@ function readData(filename)
     initalAge, area, density, growthRate, yields
 end
 
-initalAge, area, density, growthRate, yields = readData(inputfile)
+initialAge, area, density, growthRate, yields = readData(inputfile)
