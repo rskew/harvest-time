@@ -67,6 +67,11 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 @variable(m,real_harvest_age[properties,years_to_plan_real])
 
+
+# for each real harvest year, need to add a constraint that it's the sum of two lambdas*t
+
+
+
 # harvest_age is zero for years_to_plan where there is no harvest
 @constraint(m, [p in properties, t in years_to_plan],
             harvest_age[p,t] <= M * harvest[p,t])
