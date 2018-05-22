@@ -117,6 +117,7 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 solve(m)
 
+println("$n_properties properties over $n_years years:")
 println("harvest[p,t]:")
 print_harvests(harvest)
 println("age[p,t]:")
