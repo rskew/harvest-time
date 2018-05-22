@@ -8,12 +8,12 @@ include("read_data.jl")
 # Dummy data for model development
 
 properties = 1:length(initialAge)
-minimum_yield_per_year = 500_00
+minimum_yield_per_year = 500_000
 maximum_yield_per_year = 1_500_000
 n_properties = 199
 n_years = 10
-replanting_cost = 10
-time_limit = 150 # seconds
+replanting_cost = 0
+time_limit = 3600 # seconds
 
 
 properties = 1:n_properties
