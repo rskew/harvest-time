@@ -11,9 +11,9 @@ properties = 1:length(initialAge)
 minimum_yield_per_year = 500_000
 maximum_yield_per_year = 1_500_000
 n_properties = 199
-n_years = 10
-replanting_cost = 0
-time_limit = 3600 # seconds
+n_years = 8
+replanting_cost = 1000
+time_limit = 120 # seconds
 
 
 properties = 1:n_properties
@@ -86,11 +86,11 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 # Maximise profit: balance yield against replanting cost
 @objective(m, Max,
-           sum(lambda[p,t,pa] * yields[p,pa]
+           sum(lambda[p,t,pa] * yields[p,pa] * netReturns[p]
                for p in properties,
                t in years_to_plan,
                pa in property_age)
-           - sum(harvest[p,t] * replanting_cost
+           - sum(harvest[p,t] * replanting_cost * area[p]
                  for p in properties,
                  t in years_to_plan))
 
@@ -187,3 +187,5 @@ end
 
 println("Total cost $(getobjectivevalue(m))")
 println("Bound is $(getobjectivebound(m))")
+
+include("plot_test.jl")

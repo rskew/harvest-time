@@ -5,10 +5,11 @@ using Clp
 firstPropertyRow = 5
 ageColumn = 3
 areaColumn = 4
-firstDensityColumn = 8
-lastDensityColumn = 29
+net_return_column = 5
+firstDensityColumn = 9
+lastDensityColumn = 30
 nProperties = 199
-inputfile = "YieldsV2.csv"
+inputfile = "YieldsV3.csv"
 tie_break_slope = 0.001
 minGrowth = 1
 
@@ -19,6 +20,7 @@ function readData(filename)
     properties = 1:nProperties
     densityYears = 1:lastDensityColumn-firstDensityColumn
 
+    netReturns = data[firstPropertyRow:firstPropertyRow+nProperties-1,net_return_column]
     initalAge = data[firstPropertyRow:firstPropertyRow+nProperties-1,ageColumn]
     area = data[firstPropertyRow:firstPropertyRow+nProperties-1,areaColumn]
     density = data[firstPropertyRow:firstPropertyRow+nProperties-1,firstDensityColumn:lastDensityColumn]
@@ -44,7 +46,7 @@ function readData(filename)
     end
 
     #returns
-    initalAge, area, density, growthRate, yields
+    initalAge, area, density, growthRate, yields, netReturns
 end
 
-initialAge, area, density, growthRate, yields = readData(inputfile)
+initialAge, area, density, growthRate, yields, netReturns = readData(inputfile)
