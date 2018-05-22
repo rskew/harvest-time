@@ -11,7 +11,7 @@ for t in years_to_plan
     for p in properties
         A = Int(round(getvalue(harvest_age[p,t])))
         if A != 0
-            year_total = year_total + A*yields[p,A]
+            year_total = year_total + yields[p,A]
         end
     end
     yields_per_year[t] = year_total
@@ -36,7 +36,7 @@ for t in years_to_plan
 end
 display(groupedbar(prop_yields, bar_position = :stack, bar_width=0.7,
     title="Total yields per year broken down into properties",
-    xlabel="Years",ylabel="Tonnes"),legend = "none")
+    xlabel="Years",ylabel="Tonnes",legend = false))
 # display(bar(age_tally))
 
 #Bug in re setting the age

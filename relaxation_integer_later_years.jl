@@ -11,43 +11,25 @@ properties = 1:length(initialAge)
 minimum_yield_per_year = 500_000
 maximum_yield_per_year = 1_500_000
 n_properties = 199
-n_years = 5
+n_years_total = 10
+n_years_int = 5
+n_years_real = 5
 replanting_cost = 10
 time_limit = 30 # seconds
 
 
 properties = 1:n_properties
-#initial_ages = ones(length(properties),1)
 initial_ages = initialAge
-#slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
-#plateau_years = 4*ones(length(properties),1)
-#replanting_cost = 1
 property_age = 1:length(yields[1,:])
-years_to_plan = 1:n_years
+years_to_plan_total = 1:n_years_total
+years_to_plan_int = 1:n_years_int
+years_to_plan_real = 1:n_years_real
 M = 100000000
-
-# years_to_plan = 1:5
-# minimum_yield_per_year = 5
-# maximum_yield_per_year = 100
-
-#yields = zeros(length(properties),length(property_age))
-#for p in properties
-#    for pa in property_age
-#        current_age = initial_ages[p] + p
-#        if current_age < plateau_years[pa]
-#            yields[p,pa] = slopes[p] * current_age
-#        else
-#            yields[p,pa] = slopes[p] * plateau_years[p]
-#        end
-#    end
-#end
-
-# yields = density
 
 
 function print_harvests(harvests)
     for p in properties
-        for t in years_to_plan
+        for t in years_to_plan_int
             print("$(Int(round(getvalue(harvests[p,t])))) ")
         end
         println()
@@ -64,25 +46,64 @@ end
 
 ### Modelling
 
-#m = Model(solver=CbcSolver(log=1, Sec=300))
 m = Model(solver=GurobiSolver(TimeLimit=time_limit))
-#TimeLimit=time_limit
+
 # 'harvest' is 1 for a propertt for a given year if that property is
 # harvested that year
-@variable(m, harvest[properties,years_to_plan], Bin)
+@variable(m, harvest[properties,years_to_plan_int], Bin)
 
 # 'age' gives the number of years_to_plan since the previous harvest of a property
-@variable(m, age[properties,years_to_plan], Int)
+@variable(m, age[properties,years_to_plan_int], Int)
 
 # HARVEST_age stores the age of a property on the years_to_plan it is harvested.
-@variable(m, harvest_age[properties,years_to_plan], Int)
+@variable(m, harvest_age[properties,years_to_plan_int], Int)
+
+########################
+########################
+# Relaxation: add a set of real valued harvest age variables for each property
+# for years after the integer planning period
+# eg integer harvest ages and years up to 5 years of planning,
+# then relaxed real values for ages and harvest dates from that to 30 years
+
+@variable(m,real_harvest_age[properties,years_to_plan_real])
+
+# harvest_age is zero for years_to_plan where there is no harvest
+@constraint(m, [p in properties, t in years_to_plan],
+            harvest_age[p,t] <= M * harvest[p,t])
+# harvest_age is the age of the property when it is harvested.
+# To maximise the objective, the solver will automatically push
+# harvest_age up to the age of the property on harvest years_to_plan.
+@constraint(m, [p in properties, t in years_to_plan],
+            harvest_age[p,t] <= age[p,t])
+# Force 'harvest_age[p,t]' to be 'age[p,t]' when harvest[p,t]
+@constraint(m, [p in properties, t in years_to_plan],
+            harvest_age[p,t] >= age[p,t] - M * (1 - harvest[p,t]))
+
+# Assign initial ages
+@constraint(m, [p in properties],
+            age[p,1] == initial_ages[p] + 1)
+# 'age' must be 1 for the year after a harvest. For any other year, 'age' must
+# be the previous age +1.
+@constraint(m, [p in properties, t in years_to_plan],
+            age[p, t] >= 1)
+@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years_to_plan; prev_t+1 == next_t],
+            age[p, next_t] <= age[p, prev_t] + 1)
+
+@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years_to_plan; prev_t+1 == next_t],
+            age[p, next_t] <= 1 + M * (1 - harvest[p,prev_t]))
+
+@constraint(m, [p in properties, prev_t in years_to_plan, next_t in years_to_plan; prev_t+1 == next_t],
+            age[p, next_t] >= age[p, prev_t] + 1 - M * harvest[p,prev_t])
+
+########################
+########################
 
 # Linearise by parts the age vs yield function.
 # Each 'harvest_age[p,t]' has its own linearised curve variables.
 # The 'y's from the lecture notes:
-@variable(m, y[properties, years_to_plan, property_age-1], Bin)
+@variable(m, y[properties, years_to_plan_total, property_age-1], Bin)
 # The lambdas from the lecture notes:
-@variable(m, 0 <= lambda[properties, years_to_plan, property_age] <= 1)
+@variable(m, 0 <= lambda[properties, years_to_plan_total, property_age] <= 1)
 
 # Maximise profit: balance yield against replanting cost
 @objective(m, Max,
