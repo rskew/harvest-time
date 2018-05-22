@@ -29,11 +29,11 @@ function readData(filename)
     for i in properties
         for j in densityYears
             yields[i,j] = density[i,j]*area[i]
-            if j>1
-                if yields[i,j] - yields[i,j-1] <= minGrowth
-                    yields[i,j] = yields[i,j] - tie_break_slope*yields[i,j]
-                end
-            end
+            # if j>1
+            #     if yields[i,j] - yields[i,j-1] <= minGrowth
+            #         yields[i,j] = yields[i,j] - tie_break_slope*yields[i,j]
+            #     end
+            # end
         end
     end
 

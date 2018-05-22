@@ -7,10 +7,10 @@ include("read_data.jl")
 #filename = ARGS[1]
 
 # Dummy data for model development
-minimum_yield_per_year = 5
-maximum_yield_per_year = 100
-n_properties = 5
-n_years = 20
+minimum_yield_per_year = 500
+maximum_yield_per_year = 2000
+n_properties = 199
+n_years = 21
 replanting_cost = 10
 time_limit = 60 # seconds
 

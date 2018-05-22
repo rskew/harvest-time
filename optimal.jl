@@ -1,13 +1,4 @@
 using JuMP
-<<<<<<< HEAD
-<<<<<<< HEAD
-using Cbc
-=======
-#using Cbc
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
-=======
-#using Cbc
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 using Gurobi
 
 include("read_data.jl")
@@ -15,45 +6,34 @@ include("read_data.jl")
 #filename = ARGS[1]
 
 # Dummy data for model development
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 properties = 1:length(initialAge)
-=======
-=======
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
-minimum_yield_per_year = 5
-maximum_yield_per_year = 1000
-n_properties = 5
-n_years = 12
+minimum_yield_per_year = 500_00
+maximum_yield_per_year = 1_500_000
+n_properties = 199
+n_years = 10
 replanting_cost = 10
-time_limit = 60 # seconds
+time_limit = 150 # seconds
 
 
 properties = 1:n_properties
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 #initial_ages = ones(length(properties),1)
 initial_ages = initialAge
 #slopes = [1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
 #plateau_years = 4*ones(length(properties),1)
-<<<<<<< HEAD
-<<<<<<< HEAD
 #replanting_cost = 1
-=======
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
-=======
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
-property_age = 1:length(density[1,:])
+property_age = 1:length(yields[1,:])
 years_to_plan = 1:n_years
 M = 100000000
 
-years_to_plan = 1:5
-minimum_yield_per_year = 5
-maximum_yield_per_year = 100
+# years_to_plan = 1:5
+# minimum_yield_per_year = 5
+# maximum_yield_per_year = 100
 
 #yields = zeros(length(properties),length(property_age))
 #for p in properties
 #    for pa in property_age
-#        current_age = initial_ages[p] + pa - 1
+#        current_age = initial_ages[p] + p
 #        if current_age < plateau_years[pa]
 #            yields[p,pa] = slopes[p] * current_age
 #        else
@@ -62,7 +42,7 @@ maximum_yield_per_year = 100
 #    end
 #end
 
-yields = density
+# yields = density
 
 
 function print_harvests(harvests)
@@ -75,7 +55,7 @@ function print_harvests(harvests)
 end
 function print_yields(yields)
     for p in properties
-        for t in 1:length(density[1,:])
+        for t in 1:length(yields[1,:])
             print("$(yields[p,t]) ")
         end
         println()
@@ -86,7 +66,7 @@ end
 
 #m = Model(solver=CbcSolver(log=1, Sec=300))
 m = Model(solver=GurobiSolver(TimeLimit=time_limit))
-
+#TimeLimit=time_limit
 # 'harvest' is 1 for a propertt for a given year if that property is
 # harvested that year
 @variable(m, harvest[properties,years_to_plan], Bin)
@@ -105,16 +85,6 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 @variable(m, 0 <= lambda[properties, years_to_plan, property_age] <= 1)
 
 # Maximise profit: balance yield against replanting cost
-<<<<<<< HEAD
-<<<<<<< HEAD
-@objective(m, Max, sum(lambda[p,t,pa] * yields[p,pa]
-                       #- harvest[p,t] * replanting_cost
-                       for p in properties,
-                           t in years_to_plan,
-                           pa in property_age))
-=======
-=======
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 @objective(m, Max,
            sum(lambda[p,t,pa] * yields[p,pa]
                for p in properties,
@@ -123,10 +93,6 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
            - sum(harvest[p,t] * replanting_cost
                  for p in properties,
                  t in years_to_plan))
-<<<<<<< HEAD
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
-=======
->>>>>>> 9cb5298a24fe6a88ab5037888cd6b3ad3080b263
 
 # Integer variables >= 0
 @constraint(m, [p in properties, t in years_to_plan],
