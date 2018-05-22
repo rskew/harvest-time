@@ -160,29 +160,34 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 solve(m)
 
-println("harvest[p,t]:")
-print_harvests(harvest)
-println("age[p,t]:")
-print_harvests(age)
+#println("harvest[p,t]:")
+#print_harvests(harvest)
+#println("age[p,t]:")
+#print_harvests(age)
 println("harvest_ages[p,t]:")
 print_harvests(harvest_age)
 println("yields[p,t]:")
 print_yields(yields)
-println("lambda:")
-for pa in property_age
-    for t in years_to_plan
-        print("$(getvalue(lambda[length(properties),t,pa])) ")
-    end
-    println()
+println("yields per year:")
+for t in years_to_plan
+    print("$(sum(getvalue(lambda[p,t,pa]*yields[p,pa]) for p in properties, pa in property_age)) ")
 end
-
-println("y:")
-for pa in property_age[1:end-1]
-    for t in years_to_plan
-        print("$(Int(round(getvalue(y[length(properties),t,pa])))) ")
-    end
-    println()
-end
+println()
+#println("lambda:")
+#for pa in property_age
+#    for t in years_to_plan
+#        print("$(getvalue(lambda[length(properties),t,pa])) ")
+#    end
+#    println()
+#end
+#
+#println("y:")
+#for pa in property_age[1:end-1]
+#    for t in years_to_plan
+#        print("$(Int(round(getvalue(y[length(properties),t,pa])))) ")
+#    end
+#    println()
+#end
 
 
 println("Total cost $(getobjectivevalue(m))")
