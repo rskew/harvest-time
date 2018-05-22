@@ -117,6 +117,7 @@ m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
 solve(m)
 
+println("$n_properties properties over $n_years years:")
 println("harvest[p,t]:")
 print_harvests(harvest)
 println("age[p,t]:")
@@ -125,5 +126,11 @@ println("harvest_ages[p,t]:")
 print_harvests(harvest_age)
 println("growth rates:")
 println("$(growthRate[1:n_properties])")
+println("yields:")
+for t in years_to_plan
+    print("$(getvalue(sum(harvest_age[p,t] * growthRate[p]
+            for p in properties))) ")
+end
+println()
 println("Total cost $(getobjectivevalue(m))")
 println("Bound is $(getobjectivebound(m))")
