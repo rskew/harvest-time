@@ -18,7 +18,7 @@ function readData(filename)
     data = readcsv(filename)
 
     properties = 1:nProperties
-    densityYears = 1:lastDensityColumn-firstDensityColumn
+    densityYears = 1:(lastDensityColumn-firstDensityColumn+1)
 
     netReturns = data[firstPropertyRow:firstPropertyRow+nProperties-1,net_return_column]
     initalAge = data[firstPropertyRow:firstPropertyRow+nProperties-1,ageColumn]
@@ -26,7 +26,7 @@ function readData(filename)
     density = data[firstPropertyRow:firstPropertyRow+nProperties-1,firstDensityColumn:lastDensityColumn]
     #Times by age to get Yeild Loop up table
 
-    yields = Array{Float64}(nProperties,lastDensityColumn-firstDensityColumn)
+    yields = Array{Float64}(nProperties,lastDensityColumn-firstDensityColumn+1)
 
     for i in properties
         for j in densityYears
