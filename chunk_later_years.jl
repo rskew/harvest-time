@@ -7,11 +7,11 @@ properties = 1:length(initialAge)
 minimum_yield_per_year = 500_000
 maximum_yield_per_year = 1_500_000
 n_properties = 199
-n_years = 2
-n_future_chunks = 5
+n_years = 8
+n_future_chunks = 6
 n_years_between_chunks = 5
 replanting_cost = 1000
-time_limit = 300 # seconds
+time_limit = 600 # seconds
 
 
 properties = 1:n_properties
@@ -20,7 +20,33 @@ property_age = 1:length(yields[1,:])
 years = 1:n_years
 future_chunks = 1:n_future_chunks
 years_plus_chunks = 1:(n_years+n_future_chunks)
-M = 100000000
+#M = 100000000
+M = 1000
+
+
+####### Get chunks from heuristic solution
+heuristic_harvest_choices_chunks = zeros(n_properties,n_years + n_future_chunks)
+heuristic_ages_chunks = zeros(n_properties,n_years + n_future_chunks)
+heuristic_harvest_ages_chunks = zeros(n_properties,n_years + n_future_chunks)
+
+for y in years
+    heuristic_harvest_choices_chunks[:,y] = heuristic_harvest_choices[:,y]
+    heuristic_ages_chunks[:,y] = heuristic_ages[:,y]
+    heuristic_harvest_ages_chunks[:,y] = heuristic_harvest_ages[:,y]
+end
+for y in future_chunks
+    aggregated_harvest_choices = zeros(n_properties,1)
+    for y_chunk in 1:n_years_between_chunks
+        aggregated_harvest_choices += heuristic_harvest_choices[:,n_years + (y-1)*n_years_between_chunks + y_chunk]
+    end
+    heuristic_harvest_choices_chunks[:,n_years + y] = aggregated_harvest_choices
+    heuristic_ages_chunks[:,n_years + y] = heuristic_ages[:,n_years + (y-1)*n_years_between_chunks + Int(round(n_years_between_chunks/2))]
+    heuristic_harvest_ages_chunks[:,n_years + y] = heuristic_harvest_ages[:,n_years + (y-1)*n_years_between_chunks + Int(round(n_years_between_chunks/2))]
+end
+
+heuristic_harvest_choices_chunks = round.(Int,heuristic_harvest_choices)
+heuristic_ages_chunks = round.(Int,heuristic_ages)
+heuristic_harvest_ages_chunks = round.(Int,heuristic_harvest_ages)
 
 
 function print_harvests(harvests)
@@ -46,13 +72,20 @@ end
 m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 # 'harvest' is 1 for a property for a given year if that property is
 # harvested that year
-@variable(m, harvest[properties,years_plus_chunks], Bin)
 
-# 'age' gives the number of years since the previous harvest of a property
-@variable(m, age[properties,years_plus_chunks], Int)
 
-# harvest_age stores the age of a property on the years it is harvested.
-@variable(m, harvest_age[properties,years_plus_chunks], Int)
+#@variable(m, harvest[properties,years_plus_chunks], Bin)
+#
+## 'age' gives the number of years since the previous harvest of a property
+#@variable(m, age[properties,years_plus_chunks], Int)
+#
+## harvest_age stores the age of a property on the years it is harvested.
+#@variable(m, harvest_age[properties,years_plus_chunks], Int)
+
+# Initialise with heuristic solution
+@variable(m, harvest[p=properties,y=years_plus_chunks], Bin, start=heuristic_harvest_choices_chunks[p,y])
+@variable(m, age[p=properties,y=years_plus_chunks], Int, start=heuristic_ages_chunks[p,y])
+@variable(m, harvest_age[p=properties,y=years_plus_chunks], Int, start=heuristic_harvest_ages_chunks[p,y])
 
 # Linearise by parts the age vs yield function.
 # Each 'harvest_age[p,t]' has its own linearised curve variables.
@@ -171,4 +204,4 @@ println()
 println("Total cost $(getobjectivevalue(m))")
 println("Bound is $(getobjectivebound(m))")
 
-include("plot_test.jl")
+include("plot_test_chunks.jl")

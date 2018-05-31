@@ -6,44 +6,46 @@
 ########
 
 using JuMP
-using Cbc
+using Gurobi
 
-#include("readerFunction.jl")
-#include("writeSolutionToFile.jl")
-#include("validateSolution.jl")
+include("read_data.jl")
 
-#filename = ARGS[1]
+minimum_yield_per_year = 500_000
+maximum_yield_per_year = 1_250_000
+n_properties = length(initialAge)
+properties = 1:n_properties
+replanting_cost = 1000
+time_limit = 30 # seconds
 
-
-# Dummy data for model development
-properties = 1:23
-initial_ages = zeros(length(properties),1)
-slopes = [1,2,3,2,1,5,5,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5]
-plateau_years = 4*ones(length(properties),1)
-minimum_yield_per_year = 3
-maximum_yield_per_year = 1000000
+property_age = 1:length(yields[1,:])
+initial_ages = initialAge + 1
 
 # Parameters to tune
-years_window = 1:10
-years_to_plan = 1:20
+n_years_window = 15
+n_years_to_plan = 50
+discount_rate = 0.0
+yield_decay_rate = 0.05
+decay_start = 10
+years_window = 1:n_years_window
+years_to_plan = 1:n_years_to_plan
 
-tie_breaker_slope = -0.001
-
-function calc_yields(initial_ages, slopes, plateau_years)
-    yields = zeros(length(properties),length(years_window))
-    for p in properties
-        for y in years_window
-            current_age = initial_ages[p] + y
-            if current_age < plateau_years[y]
-                yields[p,y] = slopes[p] * current_age
-            else
-                yields[p,y] = slopes[p] * plateau_years[p] +
-                    tie_breaker_slope * (y - plateau_years[p])
-            end
-        end
-    end
-    return yields
+# Extend plateau section. Some properties may not be harvested until later.
+n_yields_to_fill = (n_years_window + n_years_to_plan)
+if n_yields_to_fill > 0
+    plateau = repeat(yields[:,end],outer=[1,n_yields_to_fill])
+    yields_extended_plateau = hcat(yields, plateau)
 end
+
+# Add yield decay
+yields_decayed = zeros(size(yields_extended_plateau))
+for y in 1:size(yields_extended_plateau,2)
+    if y < decay_start
+        yields_decayed[:,y] = yields_extended_plateau[:,y]
+    else
+        yields_decayed[:,y] = yields_extended_plateau[:,y] * (1 - yield_decay_rate)^(y-decay_start)
+    end
+end
+
 
 function print_harvests(harvests)
     println("harvests[p,y]:")
@@ -73,30 +75,31 @@ function print_yields(yields)
     end
 end
 
-yields = calc_yields(initial_ages, slopes, plateau_years)
+#yields = calc_yields(initial_ages, slopes, plateau_years)
 
 harvest_choices = zeros(length(properties),length(years_to_plan))
 
 
 for year in years_to_plan
-    m = Model(solver=CbcSolver(log=3, Sec=30))
+    println("Year: $(year)")
+    m = Model(solver=GurobiSolver(TimeLimit=time_limit))
 
     @variable(m, harvest[properties,years_window], Bin)
 
-    @objective(m, Max, sum(harvest[p,y] * yields[p,y] for p in properties, y in years_window))
+    @objective(m, Max, sum(harvest[p,y] * yields_decayed[p,y+initial_ages[p]] * (1 - discount_rate)^(y-1) for p in properties, y in years_window))
 
-    # Only havest each property once
+    # Only harvest each property once
     @constraint(m, [p in properties],
                 sum(harvest[p,y] for y in years_window) <= 1)
 
     # Must provide a minimum quantity per year.
     # Otherwise properties would be harvested at the latest possible date.
     @constraint(m, [y in years_window],
-                sum(harvest[p,y] * yields[p,y] for p in properties) >= minimum_yield_per_year)
+                sum(harvest[p,y] * yields_decayed[p,y+initial_ages[p]] for p in properties) >= minimum_yield_per_year)
 
     # The amount of product that can be processed is limited.
     @constraint(m, [y in years_window],
-                sum(harvest[p,y] * yields[p,y] for p in properties) <= maximum_yield_per_year)
+                sum(harvest[p,y] * yields_decayed[p,y+initial_ages[p]] for p in properties) <= maximum_yield_per_year)
 
     solve(m)
 
@@ -106,8 +109,6 @@ for year in years_to_plan
     println()
     println("initial_ages:")
     println("$initial_ages")
-    println()
-    print_yields(yields)
     println()
     print_harvests(harvest)
     println()
@@ -125,7 +126,6 @@ for year in years_to_plan
         end
     end
 
-    yields = calc_yields(initial_ages, slopes, plateau_years)
 end
 
 println()
@@ -133,3 +133,34 @@ println()
 println()
 println()
 print_harvest_choices(harvest_choices)
+
+ages = zeros(size(harvest_choices))
+ages[:,1] = initialAge[properties,:] + 1
+for y in years_to_plan[1:end-1]
+    for p in properties
+        if harvest_choices[p,y] > 0.5
+            ages[p,y+1] = 1
+        else
+            ages[p,y+1] = ages[p,y] + 1
+        end
+    end
+end
+
+harvest_ages = ages .* harvest_choices
+
+println("harvest_choices")
+print_harvest_choices(harvest_choices)
+println("ages")
+print_harvest_choices(ages)
+println("harvest_ages")
+print_harvest_choices(harvest_ages)
+
+heuristic_harvest_choices = round.(Int,harvest_choices)
+heuristic_ages = round.(Int,ages)
+heuristic_harvest_ages = round.(Int,harvest_ages)
+
+writecsv("heuristic_harvest_choices.csv",heuristic_harvest_choices)
+writecsv("heuristic_ages.csv",heuristic_ages)
+writecsv("heuristic_harvest_ages.csv",heuristic_harvest_ages)
+
+include("plot_test_plan_next_year.jl")

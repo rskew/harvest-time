@@ -27,7 +27,7 @@ years_int = 1:n_years_int
 years_real = 1:n_years_real
 years_total = 1:n_years_total
 harvests = 1:(n_years_int+n_real_harvests)
-M = 100000000
+M = 10000
 
 
 function print_harvests(harvests)
